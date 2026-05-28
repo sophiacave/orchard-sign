@@ -166,6 +166,189 @@ ERROR_PATTERNS = [
             "xcodebuild CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER='YourProfile'"
         ]
     },
+    # Notarization errors
+    {
+        "pattern": r"(?:notarization|notarize|notary).*(?:failed|error|rejected|invalid)",
+        "category": "notarization",
+        "severity": "error",
+        "title": "Notarization failed",
+        "fix": "App notarization was rejected by Apple. Check the notarization log for specific issues.",
+        "commands": [
+            "# Submit for notarization:",
+            "xcrun notarytool submit YourApp.zip --apple-id YOUR_APPLE_ID --password YOUR_APP_PASSWORD --team-id YOUR_TEAM_ID --wait",
+            "# Check notarization log:",
+            "xcrun notarytool log SUBMISSION_ID --apple-id YOUR_APPLE_ID --password YOUR_APP_PASSWORD"
+        ],
+        "apple_doc": "https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution"
+    },
+    {
+        "pattern": r"(?:hardened runtime|com\.apple\.security\.cs\.allow-unsigned-executable-memory|runtime hardening)",
+        "category": "notarization",
+        "severity": "error",
+        "title": "Hardened Runtime issue",
+        "fix": "Hardened Runtime is required for notarization. Enable it or check entitlements.",
+        "commands": [
+            "# Enable Hardened Runtime in Xcode:",
+            "# Target > Signing & Capabilities > + Capability > Hardened Runtime",
+            "# Or via command line:",
+            "codesign --force --options runtime --sign 'Developer ID Application: YOUR_NAME' YourApp.app"
+        ],
+        "apple_doc": "https://developer.apple.com/documentation/security/hardened-runtime"
+    },
+    # Gatekeeper errors
+    {
+        "pattern": r"(?:Gatekeeper|GKE|translocated|quarantine|cannot be opened because.*unidentified|damaged.*move.*trash)",
+        "category": "gatekeeper",
+        "severity": "error",
+        "title": "Gatekeeper rejection",
+        "fix": "macOS Gatekeeper is blocking the app. Usually a signing or notarization issue.",
+        "commands": [
+            "# Check Gatekeeper assessment:",
+            "spctl --assess -vv YourApp.app",
+            "# Check code signature:",
+            "codesign -dvv YourApp.app",
+            "# Check notarization staple:",
+            "stapler validate YourApp.app"
+        ],
+        "apple_doc": "https://support.apple.com/guide/security/gatekeeper-and-runtime-protection-sec5599b66df"
+    },
+    # Code signature corruption
+    {
+        "pattern": r"(?:invalid signature|code signature invalid|signature not valid|CSSMERR_TP_NOT_TRUSTED|a sealed resource is missing or invalid|resource.*modified)",
+        "category": "certificate",
+        "severity": "error",
+        "title": "Code signature invalid or corrupted",
+        "fix": "The code signature is invalid. The binary may have been modified after signing, or the signature is malformed.",
+        "commands": [
+            "# Verify signature:",
+            "codesign --verify --deep --strict YourApp.app",
+            "# Re-sign the app:",
+            "codesign --force --deep --sign 'YOUR_SIGNING_IDENTITY' YourApp.app"
+        ]
+    },
+    # Resource seal broken
+    {
+        "pattern": r"(?:resource fork|resource envelope|seal.*broken|resource.*modified after signing)",
+        "category": "certificate",
+        "severity": "error",
+        "title": "Resource seal broken",
+        "fix": "A resource was modified after the app was signed. Re-sign after all modifications are complete.",
+        "commands": [
+            "# Find modified resources:",
+            "codesign --verify --deep --strict --verbose=4 YourApp.app 2>&1 | grep 'modified'",
+            "# Strip resource forks before signing:",
+            "xattr -cr YourApp.app",
+            "# Then re-sign:",
+            "codesign --force --deep --sign 'YOUR_SIGNING_IDENTITY' YourApp.app"
+        ]
+    },
+    # Embedded binary signing
+    {
+        "pattern": r"(?:embedded binary.*not signed|nested.*not signed|framework.*not signed|dylib.*not signed|helper.*not signed)",
+        "category": "certificate",
+        "severity": "error",
+        "title": "Embedded binary not signed",
+        "fix": "An embedded framework, dylib, or helper tool is not code signed.",
+        "commands": [
+            "# Find unsigned embedded binaries:",
+            "codesign --verify --deep --strict YourApp.app 2>&1",
+            "# Sign embedded frameworks:",
+            "codesign --force --sign 'YOUR_SIGNING_IDENTITY' YourApp.app/Contents/Frameworks/*.framework",
+            "# Then re-sign the main app:",
+            "codesign --force --deep --sign 'YOUR_SIGNING_IDENTITY' YourApp.app"
+        ]
+    },
+    # Timestamp server
+    {
+        "pattern": r"(?:timestamp.*(?:fail|error|unavailable)|secure timestamp|TSA)",
+        "category": "certificate",
+        "severity": "warning",
+        "title": "Timestamp server failure",
+        "fix": "Code signing timestamp server is unavailable. Signatures without timestamps expire with the certificate.",
+        "commands": [
+            "# Sign with timestamp (default, requires internet):",
+            "codesign --force --timestamp --sign 'YOUR_SIGNING_IDENTITY' YourApp.app",
+            "# Sign without timestamp (NOT recommended for distribution):",
+            "codesign --force --timestamp=none --sign 'YOUR_SIGNING_IDENTITY' YourApp.app"
+        ]
+    },
+    # App Sandbox
+    {
+        "pattern": r"(?:sandbox.*(?:deny|violation|error)|SANDBOX_CHECK|deny.*file-read|deny.*file-write|deny.*network)",
+        "category": "entitlement",
+        "severity": "error",
+        "title": "App Sandbox violation",
+        "fix": "The app tried to access a resource blocked by App Sandbox. Add the required entitlement.",
+        "commands": [
+            "# Check current entitlements:",
+            "codesign -d --entitlements :- YourApp.app",
+            "# Common sandbox entitlements:",
+            "# com.apple.security.network.client (outgoing connections)",
+            "# com.apple.security.files.user-selected.read-write (file access)",
+            "# com.apple.security.files.downloads.read-write (Downloads folder)"
+        ],
+        "apple_doc": "https://developer.apple.com/documentation/security/app-sandbox"
+    },
+    # Entitlement conflicts
+    {
+        "pattern": r"(?:entitlement.*conflict|conflicting entitlements|entitlements.*(?:don't match|do not match|mismatch))",
+        "category": "entitlement",
+        "severity": "error",
+        "title": "Entitlement conflict between targets",
+        "fix": "Entitlements in embedded binaries conflict with the parent app's entitlements.",
+        "commands": [
+            "# Compare entitlements between app and extensions:",
+            "codesign -d --entitlements :- YourApp.app",
+            "codesign -d --entitlements :- YourApp.app/Contents/PlugIns/YourExtension.appex",
+            "# Embedded binaries must have a subset of the parent's entitlements"
+        ]
+    },
+    # Architecture mismatch
+    {
+        "pattern": r"(?:(?:unsupported|missing|incompatible).*(?:architecture|arch)|arm64.*x86_64|no matching architecture|Bad CPU type)",
+        "category": "config",
+        "severity": "error",
+        "title": "Architecture mismatch",
+        "fix": "Binary does not contain the required architecture for the target device.",
+        "commands": [
+            "# Check architectures in binary:",
+            "lipo -info YourApp.app/Contents/MacOS/YourApp",
+            "# Build universal binary:",
+            "xcodebuild -target YourApp -arch arm64 -arch x86_64",
+            "# Or create universal manually:",
+            "lipo -create YourApp_arm64 YourApp_x86_64 -output YourApp_universal"
+        ]
+    },
+    # Export compliance
+    {
+        "pattern": r"(?:export compliance|ITSAppUsesNonExemptEncryption|encryption.*export|ECCN)",
+        "category": "config",
+        "severity": "info",
+        "title": "Export compliance flag",
+        "fix": "App may need export compliance documentation if it uses non-exempt encryption.",
+        "commands": [
+            "# Add to Info.plist if using only HTTPS (exempt):",
+            "# <key>ITSAppUsesNonExemptEncryption</key>",
+            "# <false/>",
+            "# If using custom encryption, file for ECCN classification"
+        ],
+        "apple_doc": "https://developer.apple.com/documentation/security/complying-with-encryption-export-regulations"
+    },
+    # Provisioning profile device
+    {
+        "pattern": r"(?:device.*not included|UDID.*not.*(?:found|included|registered)|not include.*device)",
+        "category": "profile",
+        "severity": "error",
+        "title": "Device not in provisioning profile",
+        "fix": "The target device's UDID is not registered in the provisioning profile.",
+        "commands": [
+            "# Get device UDID:",
+            "xcrun xctrace list devices",
+            "# Register device in Apple Developer Portal > Devices",
+            "# Then regenerate your provisioning profile to include it"
+        ],
+        "apple_doc": "https://developer.apple.com/account/resources/devices"
+    },
 ]
 
 
