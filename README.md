@@ -29,14 +29,26 @@ Add to `~/.claude/mcp.json`:
 | `sign_profiles` | List all provisioning profiles with expiry dates |
 | `sign_fix` | Step-by-step fix guides for common signing problems |
 
-## Error Patterns Detected
+## Error Patterns Detected (22)
 
-- No signing certificate / expired / revoked
-- Provisioning profile invalid / expired / missing entitlements
-- Bundle ID mismatch
-- Keychain access failures (CI/CD)
-- Team ID ambiguity
-- Automatic signing conflicts
+**Certificates:** No certificate found, expired, revoked, invalid/corrupted signature, resource seal broken, embedded binary not signed, timestamp server failure
+
+**Profiles:** No valid profile, expired, bundle ID mismatch, missing entitlements, device not registered
+
+**Notarization:** Notarization failed, Hardened Runtime issues
+
+**Gatekeeper:** App blocked/damaged messages
+
+**Entitlements:** Missing entitlements, entitlement conflicts between targets, App Sandbox violations
+
+**Config:** Team ID ambiguity, automatic signing conflicts, architecture mismatch, export compliance
+
+## Testing
+
+```bash
+python3 tests/test_integration.py
+# 44 tests, 0 failures
+```
 
 ## Fix Guides
 
