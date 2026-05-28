@@ -1,4 +1,9 @@
-# orchard-sign
+# Orchard Sign
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
+[![Tests: 44 passing](https://img.shields.io/badge/Tests-44%20passing-green.svg)](tests/)
+[![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-orange.svg)](https://modelcontextprotocol.io)
 
 **Apple code signing automation for Claude Code.** Diagnose errors, check health, list certificates and profiles, get fix guides. Zero competitors.
 
