@@ -12,7 +12,7 @@ PASS = 0
 FAIL = 0
 
 
-def test(name, condition):
+def check(name, condition):
     global PASS, FAIL
     if condition:
         PASS += 1
@@ -25,12 +25,12 @@ def test(name, condition):
 def test_pattern_coverage():
     """All 22 error patterns exist."""
     print("\n--- Pattern Coverage ---")
-    test("22+ error patterns defined", len(ERROR_PATTERNS) >= 22)
+    check("22+ error patterns defined", len(ERROR_PATTERNS) >= 22)
 
     categories = set(p["category"] for p in ERROR_PATTERNS)
     expected_categories = {"certificate", "profile", "entitlement", "keychain", "config", "notarization", "gatekeeper"}
     for cat in expected_categories:
-        test(f"Category '{cat}' exists", cat in categories)
+        check(f"Category '{cat}' exists", cat in categories)
 
 
 def test_certificate_errors():
@@ -38,13 +38,13 @@ def test_certificate_errors():
     print("\n--- Certificate Errors ---")
 
     issues = diagnose_error("No signing certificate found for team ABC")
-    test("Matches 'no signing certificate'", any(i.title == "No signing certificate found" for i in issues))
+    check("Matches 'no signing certificate'", any(i.title == "No signing certificate found" for i in issues))
 
     issues = diagnose_error("certificate has expired on 2025-01-01")
-    test("Matches expired certificate", any(i.title == "Signing certificate expired" for i in issues))
+    check("Matches expired certificate", any(i.title == "Signing certificate expired" for i in issues))
 
     issues = diagnose_error("certificate was revoked by the issuer")
-    test("Matches revoked certificate", any(i.title == "Signing certificate revoked" for i in issues))
+    check("Matches revoked certificate", any(i.title == "Signing certificate revoked" for i in issues))
 
 
 def test_profile_errors():
@@ -52,16 +52,16 @@ def test_profile_errors():
     print("\n--- Profile Errors ---")
 
     issues = diagnose_error("no provisioning profile found matching bundle ID com.example.app")
-    test("Matches no provisioning profile", any(i.title == "No valid provisioning profile" for i in issues))
+    check("Matches no provisioning profile", any(i.title == "No valid provisioning profile" for i in issues))
 
     issues = diagnose_error("Provisioning profile has expired")
-    test("Matches expired profile", any(i.title == "Provisioning profile expired" for i in issues))
+    check("Matches expired profile", any(i.title == "Provisioning profile expired" for i in issues))
 
     issues = diagnose_error("doesn't match the bundle identifier com.example.app")
-    test("Matches bundle ID mismatch", any(i.title == "Bundle ID mismatch" for i in issues))
+    check("Matches bundle ID mismatch", any(i.title == "Bundle ID mismatch" for i in issues))
 
     issues = diagnose_error("device UDID not included in provisioning profile")
-    test("Matches device not in profile", any(i.title == "Device not in provisioning profile" for i in issues))
+    check("Matches device not in profile", any(i.title == "Device not in provisioning profile" for i in issues))
 
 
 def test_notarization_errors():
@@ -69,10 +69,10 @@ def test_notarization_errors():
     print("\n--- Notarization Errors ---")
 
     issues = diagnose_error("notarization failed: invalid binary")
-    test("Matches notarization failed", any(i.title == "Notarization failed" for i in issues))
+    check("Matches notarization failed", any(i.title == "Notarization failed" for i in issues))
 
     issues = diagnose_error("hardened runtime is required for notarization")
-    test("Matches hardened runtime", any(i.title == "Hardened Runtime issue" for i in issues))
+    check("Matches hardened runtime", any(i.title == "Hardened Runtime issue" for i in issues))
 
 
 def test_gatekeeper_errors():
@@ -80,10 +80,10 @@ def test_gatekeeper_errors():
     print("\n--- Gatekeeper Errors ---")
 
     issues = diagnose_error("Gatekeeper has blocked this application")
-    test("Matches Gatekeeper rejection", any(i.title == "Gatekeeper rejection" for i in issues))
+    check("Matches Gatekeeper rejection", any(i.title == "Gatekeeper rejection" for i in issues))
 
     issues = diagnose_error("app is damaged and can't be opened. You should move it to the Trash.")
-    test("Matches damaged app message", any(i.title == "Gatekeeper rejection" for i in issues))
+    check("Matches damaged app message", any(i.title == "Gatekeeper rejection" for i in issues))
 
 
 def test_signature_errors():
@@ -91,10 +91,10 @@ def test_signature_errors():
     print("\n--- Signature Errors ---")
 
     issues = diagnose_error("code signature invalid for binary")
-    test("Matches invalid signature", any(i.title == "Code signature invalid or corrupted" for i in issues))
+    check("Matches invalid signature", any(i.title == "Code signature invalid or corrupted" for i in issues))
 
     issues = diagnose_error("a sealed resource is missing or invalid in the app bundle")
-    test("Matches sealed resource issue", any("signature" in i.title.lower() or "seal" in i.title.lower() for i in issues))
+    check("Matches sealed resource issue", any("signature" in i.title.lower() or "seal" in i.title.lower() for i in issues))
 
 
 def test_sandbox_errors():
@@ -102,7 +102,7 @@ def test_sandbox_errors():
     print("\n--- Sandbox Errors ---")
 
     issues = diagnose_error("sandbox deny file-read-data /usr/local/bin/tool")
-    test("Matches sandbox deny", any(i.title == "App Sandbox violation" for i in issues))
+    check("Matches sandbox deny", any(i.title == "App Sandbox violation" for i in issues))
 
 
 def test_architecture_errors():
@@ -110,10 +110,10 @@ def test_architecture_errors():
     print("\n--- Architecture Errors ---")
 
     issues = diagnose_error("unsupported architecture arm64")
-    test("Matches arch mismatch", any(i.title == "Architecture mismatch" for i in issues))
+    check("Matches arch mismatch", any(i.title == "Architecture mismatch" for i in issues))
 
     issues = diagnose_error("Bad CPU type in executable")
-    test("Matches Bad CPU type", any(i.title == "Architecture mismatch" for i in issues))
+    check("Matches Bad CPU type", any(i.title == "Architecture mismatch" for i in issues))
 
 
 def test_fallback_diagnosis():
@@ -121,10 +121,10 @@ def test_fallback_diagnosis():
     print("\n--- Fallback ---")
 
     issues = diagnose_error("weird signing error nobody has seen before")
-    test("Fallback produces info issue", len(issues) > 0 and issues[0].severity == "info")
+    check("Fallback produces info issue", len(issues) > 0 and issues[0].severity == "info")
 
     issues = diagnose_error("completely unrelated error")
-    test("Non-signing error produces no issues", len(issues) == 0)
+    check("Non-signing error produces no issues", len(issues) == 0)
 
 
 def test_format_diagnosis():
@@ -133,11 +133,11 @@ def test_format_diagnosis():
 
     issues = [SigningIssue("certificate", "error", "Test error", "msg", "fix", ["cmd1"])]
     report = format_diagnosis(issues)
-    test("Report contains issue count", "1 issue" in report)
-    test("Report contains ERROR tag", "ERROR" in report)
+    check("Report contains issue count", "1 issue" in report)
+    check("Report contains ERROR tag", "ERROR" in report)
 
     empty = format_diagnosis([])
-    test("Empty report says no issues", "No signing issues" in empty)
+    check("Empty report says no issues", "No signing issues" in empty)
 
 
 def test_mcp_protocol():
@@ -145,16 +145,16 @@ def test_mcp_protocol():
     print("\n--- MCP Protocol ---")
 
     resp = handle_request({"method": "initialize", "id": 1})
-    test("initialize returns serverInfo", "serverInfo" in resp)
-    test("server name is orchard-sign", resp["serverInfo"]["name"] == "orchard-sign")
+    check("initialize returns serverInfo", "serverInfo" in resp)
+    check("server name is orchard-sign", resp["serverInfo"]["name"] == "orchard-sign")
 
     resp = handle_request({"method": "tools/list", "id": 2})
     tools = resp["tools"]
     tool_names = [t["name"] for t in tools]
-    test("5 tools listed", len(tools) == 5)
-    test("sign_diagnose exists", "sign_diagnose" in tool_names)
-    test("sign_health exists", "sign_health" in tool_names)
-    test("sign_fix exists", "sign_fix" in tool_names)
+    check("5 tools listed", len(tools) == 5)
+    check("sign_diagnose exists", "sign_diagnose" in tool_names)
+    check("sign_health exists", "sign_health" in tool_names)
+    check("sign_fix exists", "sign_fix" in tool_names)
 
     # sign_diagnose
     resp = handle_request({
@@ -163,7 +163,7 @@ def test_mcp_protocol():
         "id": 3
     })
     text = resp["content"][0]["text"]
-    test("sign_diagnose returns diagnosis text", "expired" in text.lower())
+    check("sign_diagnose returns diagnosis text", "expired" in text.lower())
 
     # sign_fix
     resp = handle_request({
@@ -172,7 +172,7 @@ def test_mcp_protocol():
         "id": 4
     })
     text = resp["content"][0]["text"]
-    test("sign_fix returns steps", "Xcode" in text)
+    check("sign_fix returns steps", "Xcode" in text)
 
     # sign_fix unknown topic
     resp = handle_request({
@@ -181,15 +181,15 @@ def test_mcp_protocol():
         "id": 5
     })
     text = resp["content"][0]["text"]
-    test("sign_fix unknown returns available topics", "Available" in text or "Unknown" in text)
+    check("sign_fix unknown returns available topics", "Available" in text or "Unknown" in text)
 
 
 def test_fix_guides():
     """All fix guides are complete."""
     print("\n--- Fix Guides ---")
-    test("5 fix guides defined", len(FIX_GUIDES) >= 5)
+    check("5 fix guides defined", len(FIX_GUIDES) >= 5)
     for topic, guide in FIX_GUIDES.items():
-        test(f"Guide '{topic}' has steps", len(guide["steps"]) > 0)
+        check(f"Guide '{topic}' has steps", len(guide["steps"]) > 0)
 
 
 if __name__ == "__main__":
