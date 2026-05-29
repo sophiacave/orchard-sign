@@ -1,0 +1,25 @@
+{
+  "manifest_version": "0.3",
+  "name": "orchard-sign",
+  "version": "1.0.0",
+  "description": "Code signing diagnostics and automation for Apple developers. 22 error patterns covering certificates, profiles, entitlements, and Xcode configuration.",
+  "display_name": "Orchard Sign",
+  "author": {"name": "Like One Foundation", "url": "https://likeone.ai"},
+  "server": {
+    "type": "python",
+    "entry_point": "src/mcp_server.py",
+    "mcp_config": {"command": "python3", "args": ["${__dirname}/src/mcp_server.py"]}
+  },
+  "tools": [
+    {"name": "sign_diagnose", "description": "Diagnose code signing errors from xcodebuild output.", "inputSchema": {"type": "object", "properties": {"error_text": {"type": "string"}}, "required": ["error_text"]}},
+    {"name": "sign_health", "description": "Full signing health check for certs, profiles, and Xcode.", "inputSchema": {"type": "object", "properties": {}}},
+    {"name": "sign_identities", "description": "List all code signing identities.", "inputSchema": {"type": "object", "properties": {}}},
+    {"name": "sign_profiles", "description": "List all provisioning profiles with expiry status.", "inputSchema": {"type": "object", "properties": {}}},
+    {"name": "sign_fix", "description": "Get step-by-step fix for a specific signing problem.", "inputSchema": {"type": "object", "properties": {"problem": {"type": "string"}}, "required": ["problem"]}}
+  ],
+  "keywords": ["apple", "codesigning", "xcode", "ios", "macos", "certificates", "provisioning"],
+  "license": "MIT",
+  "repository": {"type": "git", "url": "https://github.com/likeone-ai/orchard-sign"},
+  "homepage": "https://likeone.ai",
+  "compatibility": {"platforms": ["darwin"]}
+}
